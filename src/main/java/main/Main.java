@@ -11,8 +11,13 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * @author helen zhao
- *         Created 08/08/16
+ * @author Helen Zhao
+ *         <p>
+ *         Main is the entry point for the program and takes the arguments: <input-file> <num processors> <optional flags>
+ *         in that order. Flags that can be used:
+ *         -o OUTPUT_NAME	manually specify output file name
+ *         -v	enable visualisation
+ *         -p	enable parallelisation
  */
 
 public class Main {
