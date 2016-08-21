@@ -27,5 +27,13 @@ public class Edge {
     public int getWeight() {
         return weight;
     }
+    
+	public void setStartNode(Node n) {
+		this.startNode = n;
+	}
+
+	public void setEndNode(Node n) {
+		this.endNode = n;
+	}
 
 }

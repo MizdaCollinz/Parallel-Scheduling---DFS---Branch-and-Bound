@@ -21,8 +21,8 @@ import java.util.regex.Pattern;
 public class InputReader {
 
     // List of nodes and edges compiled from input .dot file. Can be accessible from other classes and methods.
-    private List<Node> nodeList = new ArrayList<>();
-    private List<Edge> edgeList = new ArrayList<>();
+    private List<Node> nodeList = new ArrayList<Node>();
+    private List<Edge> edgeList = new ArrayList<Edge>();
 
     // main.Main input reader function
     // main.Main input reader function

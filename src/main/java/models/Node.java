@@ -51,6 +51,15 @@ public class Node implements Comparable<Node>, Cloneable {
         incomingEdges.add(edge);
     }
 
+
+    public void setIncomingEdges(List<Edge> edges) {
+        incomingEdges = edges;
+    }
+
+    public void setOutgoingEdges(List<Edge> edges) {
+        outgoingEdges = edges;
+    }
+
     public int getNumberIncomingEdges() {
         return incomingEdges.size();
     }
@@ -117,5 +126,26 @@ public class Node implements Comparable<Node>, Cloneable {
         clone.setProcessor(this.processor);
         clone.setHasRun(this.hasRun);
         return clone;
+    }
+
+    public Node fullClone() {
+        Node clone = new Node(this.name, this.weight);
+        clone.setStartTime(this.startTime);
+        clone.setProcessor(this.processor);
+        clone.setHasRun(this.hasRun);
+   
+        clone.setIncomingEdges(this.incomingEdges);
+        clone.setOutgoingEdges(this.outgoingEdges);
+        
+        return clone;
+    }
+    
+    @Override
+    public boolean equals(Object obj){
+    	Node node =(Node)obj;
+    	if (this.name == node.name){
+    		return true;
+    	}
+    	return false;
     }
 }
