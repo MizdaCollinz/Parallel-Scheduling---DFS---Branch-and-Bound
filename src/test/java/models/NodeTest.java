@@ -20,9 +20,13 @@ public class NodeTest {
         assertEquals(weight, node.getWeight());
         assertEquals(0, node.getNumberIncomingEdges());
         assertEquals(0, node.getNumberOutgoingEdges());
+<<<<<<< HEAD
+
+=======
         assertEquals(-1, node.getStartTime());
         assertEquals(-1, node.getProcessor());
         assertEquals(false, node.getHasRun());
+>>>>>>> origin/master
     }
 
 

@@ -24,6 +24,7 @@ public class InputReader {
     private List<Node> nodeList = new ArrayList<Node>();
     private List<Edge> edgeList = new ArrayList<Edge>();
 
+
     // main.Main input reader function
     // main.Main input reader function
     public void readFile(File file) throws IOException {

@@ -4,10 +4,13 @@ import inputoutput.InputReader;
 import inputoutput.OutputWriter;
 import models.Edge;
 import models.Node;
+import models.NodeTuple;
 import scheduler.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+
 import java.util.List;
 
 /**
@@ -21,7 +24,10 @@ import java.util.List;
  */
 
 public class Main {
-    private static List<Node> optimalSchedule;
+
+    private static List<Node> nodeList;
+    private static HashMap<String, NodeTuple> optimalInfo;
+
 
     public static void main(String[] args) throws IllegalArgumentException {
 
@@ -29,17 +35,24 @@ public class Main {
             throw new IllegalArgumentException("Error: Not enough parameters. Please use the following argument format: <input-file-path> <number of processors>");
         }
 
+
+        String inputName = args[0];
+
         // Flags for optional parameters
-        String outputFile = "";
         boolean hasOutputName = false;
         boolean visualisation = false;
         boolean parallelisation = false;
-        int numThreads = 0;
+
+        String outputFile = "";
+        int numProcessors;
+        int numCores = 1;
+
 
         // If there are extra parameters specified
         if (args.length > 2) {
             for (int i = 2; i < args.length; i++) {
-                // If it is a flag parameter, identify what it is
+                //If it is a flag param, identify what it is
+
                 if (args[i].substring(0, 1).equals("-")) {
                     switch (args[i]) {
                         case "-o":
@@ -51,23 +64,27 @@ public class Main {
                             break;
                         case "-p":
                             parallelisation = true;
-                            numThreads = Integer.parseInt(args[i + 1]);
+
+                            numCores = Integer.parseInt(args[i + 1]);
                             break;
                     }
                 }
+
             }
         }
 
-        File inputFile = new File(args[0]);
+//        System.out.println("Processing...");
 
-        int numProcessors;
+        File inputFile = new File(inputName);
+        
+
         try {
             numProcessors = Integer.parseInt(args[1]);
         } catch (NumberFormatException nfe) {
             throw new IllegalArgumentException("Error: Argument 2 (Number of Processors) " + args[1] + " is not a number.");
         }
 
-        List<Node> nodeList;
+
         List<Edge> edgeList;
 
         try {
@@ -78,35 +95,47 @@ public class Main {
         } catch (IOException io) {
             throw new IllegalArgumentException("Error: invalid input .dot file or location/filepath");
         }
-
-        if (parallelisation) {
-        	if (visualisation) {
-        		// 
-        	}
-        	MasterScheduler masterScheduler = MasterScheduler.getInstance(numThreads, numProcessors);
-        	optimalSchedule = masterScheduler.createSchedule(nodeList);
-        } else {
-        	if (visualisation) {
-        		//
-        	}
-	            ValidNodeFinderInterface validNodeFinder = new ValidNodeFinder();
-	            ProcessorAllocatorInterface processorAllocator = new ProcessorAllocator(numProcessors);
-	            SchedulerInterface scheduler = new DepthFirst_BaB_Scheduler(validNodeFinder, processorAllocator);
-	            optimalSchedule = scheduler.createSchedule(nodeList);
-        }
         
-        // Create an output .dot file by using the optimalSchedule
-        String outputFileName = hasOutputName ? outputFile : format(args[0]) + "-output";
+        ValidNodeFinderInterface validNodeFinder = new ValidNodeFinder();
+        ProcessorAllocatorInterface processorAllocator = new ProcessorAllocator(numProcessors);
+        
+        if(parallelisation) {
+        	if(visualisation) {
+        		
+        	}
+        	MasterSchedulerInterface scheduler = MasterScheduler.getInstance(numCores, numProcessors);
+        	scheduler.createSchedule(nodeList, edgeList);
+        	optimalInfo = scheduler.getSchedule();
+        } else {
+        	if(visualisation) {
+        		
+        	}
+            SchedulerInterface scheduler = new DepthFirst_BaB_Scheduler(validNodeFinder, processorAllocator);
+            scheduler.createSchedule(nodeList, edgeList);
+            optimalInfo = scheduler.getSchedule();
+        }
+
+        String outputFileName = hasOutputName ? outputFile : format(inputName) + "-output";
         OutputWriter outputWriter = new OutputWriter();
-        outputWriter.writeFile(optimalSchedule, edgeList, outputFileName);
+        outputWriter.writeFile(nodeList, optimalInfo, edgeList, outputFileName);
+//        System.out.println("Completed.");
 
     }
 
-    public static List<Node> getOptimalSchedule() {
-        return optimalSchedule;
+    public static HashMap<String, NodeTuple> getOptimalSchedule() {
+        return optimalInfo;
+    }
+    
+    public static List<Node> getNodeList() {
+    	return nodeList;
     }
 
     private static String format(String rawInputName) {
-        return rawInputName.substring(rawInputName.lastIndexOf(File.separator), rawInputName.indexOf(".dot"));
+        if (rawInputName.contains(File.separator)){
+            return rawInputName.substring(rawInputName.lastIndexOf(File.separator), rawInputName.indexOf(".dot"));
+        } else {
+            return rawInputName.substring(0, rawInputName.indexOf(".dot"));
+        }
+
     }
 }

@@ -4,11 +4,19 @@ import inputoutput.OutputWriter;
 import junitx.framework.FileAssert;
 import models.Edge;
 import models.Node;
+<<<<<<< HEAD
+import models.NodeTuple;
+=======
+>>>>>>> origin/master
 import org.junit.Test;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+<<<<<<< HEAD
+import java.util.HashMap;
+=======
+>>>>>>> origin/master
 
 /**
  * @author William Lin
@@ -17,6 +25,10 @@ public class OutputWriterTest {
 
     public List<Node> inputNodeList = new ArrayList<Node>();
     public List<Edge> inputEdgeList = new ArrayList<Edge>();
+<<<<<<< HEAD
+    private HashMap<String, NodeTuple> inputNodeInfo = new HashMap<String, NodeTuple>();
+=======
+>>>>>>> origin/master
 
     @Test
     public void OutputFileTest() {
@@ -43,6 +55,12 @@ public class OutputWriterTest {
         fourthNode.addIncomingEdge(fourthEdge);
 
         //Adding correct input node properties
+<<<<<<< HEAD
+        inputNodeInfo.put(firstNode.getName(), new NodeTuple(0, 1, new ArrayList<Integer>(), true));
+        inputNodeInfo.put(secondNode.getName(), new NodeTuple(2, 1, new ArrayList<Integer>(), true));
+        inputNodeInfo.put(thirdNode.getName(), new NodeTuple(4, 2, new ArrayList<Integer>(), true));
+        inputNodeInfo.put(fourthNode.getName(), new NodeTuple(7, 2, new ArrayList<Integer>(), true));
+=======
         firstNode.setStartTime(0);
         firstNode.setProcessor(1);
         secondNode.setStartTime(2);
@@ -51,6 +69,7 @@ public class OutputWriterTest {
         thirdNode.setProcessor(2);
         fourthNode.setStartTime(7);
         fourthNode.setProcessor(2);
+>>>>>>> origin/master
 
         //Adding nodes and edges into their respective lists to pass into OutputWriter
         inputNodeList.add(firstNode);
@@ -67,7 +86,11 @@ public class OutputWriterTest {
         String outputFileName = "outputFile";
 
         OutputWriter ow = new OutputWriter();
+<<<<<<< HEAD
+        ow.writeFile(inputNodeList, inputNodeInfo, inputEdgeList, outputFileName);
+=======
         ow.writeFile(inputNodeList, inputEdgeList, outputFileName);
+>>>>>>> origin/master
 
         //Get working directory
         String workingDir = System.getProperty("user.dir");

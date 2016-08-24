@@ -1,6 +1,7 @@
 package scheduler;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -10,25 +11,28 @@ import java.util.concurrent.Executors;
 import models.Edge;
 import models.Node;
 
-public class MasterScheduler implements SchedulerInterface {
-	private static MasterScheduler masterScheduler;
-	private List<SchedulerInterface> schedulerList;
+import models.NodeTuple;
+
+public class MasterScheduler implements MasterSchedulerInterface {
+	private static MasterSchedulerInterface masterScheduler;
+	private List<ParallelSchedulerInterface> schedulerList;
 	private List<Node> nodeList;
-	private List<Edge> edgeList;
-	private List<Node> optimalSchedule;
-	private List<List<Node>> nodeLists;
+	private HashMap<String, NodeTuple> optimalSchedule;
+	private HashMap<String, NodeTuple> scheduleInfo = new HashMap<String, NodeTuple>();
+
 	private int bestBound = 0;
 	private static int traverseThreads;
 	private static int numProcessors;
 
 	// NEED TO MAKE THIS THREAD SAFE
 	private Queue<ComparisonTuple> comparisonQueue = new LinkedList<ComparisonTuple>();
+	private Queue<SubpathTuple> subpathQueue;
 
 	// Prevents new objects of this class from being instantiated
-	private MasterScheduler() {
-	}
+	private MasterScheduler() {}
 
-	public static MasterScheduler getInstance() {
+	public static MasterSchedulerInterface getInstance() {
+
 		if (masterScheduler == null) {
 			masterScheduler = new MasterScheduler();
 		}
@@ -36,8 +40,9 @@ public class MasterScheduler implements SchedulerInterface {
 		return masterScheduler;
 	}
 
-	public static MasterScheduler getInstance(int numThreads, int numProcessors) {
-		MasterScheduler.traverseThreads = numThreads - 1;
+
+	public static MasterSchedulerInterface getInstance(int numCores, int numProcessors) {
+		MasterScheduler.traverseThreads = numCores - 1;
 		MasterScheduler.numProcessors = numProcessors;
 
 		if (masterScheduler == null) {
@@ -46,130 +51,143 @@ public class MasterScheduler implements SchedulerInterface {
 
 		return masterScheduler;
 	}
-
-	public synchronized void compare(List<Node> schedule, int scheduleBound) {
+	
+	public synchronized void compare(HashMap<String, NodeTuple> schedule, int scheduleBound) {
 		this.comparisonQueue.add(new ComparisonTuple(schedule, scheduleBound));
 	}
-
-	public List<Node> createSchedule(List<Node> nodeList) {
-		// Initially bestBound is equivalent to serial schedule
-		for (Node n : nodeList) {
-			bestBound += n.getWeight();
+	
+	public void initiateNewSubpathTuple(ParallelSchedulerInterface scheduler) {
+		SubpathTuple tuple = getSubpathTuple();
+		if(tuple != null){
+			scheduler.initiateNewSubtree(this.nodeList, tuple.processorAllocator, tuple.nodeStack, this.bestBound, tuple.scheduleInfo,tuple.schedule);
 		}
-
-		// Create schedulers and pass in appropriate partial schedule
-		Queue<SubpathTuple> subpathQueue = createSubpathTuples();
-		
-		ExecutorService executorService = Executors.newFixedThreadPool(traverseThreads);
-
-		for (int i = 0; i < traverseThreads; i++) {
-			executorService.execute(new Runnable() {
-				public void run() {
-					SubpathTuple tuple = subpathQueue.remove();
-					ParallelSchedulerInterface scheduler = new PnV_DepthFirst_BaB_Scheduler(new ValidNodeFinder(),tuple.processorAllocator );
-					scheduler.initiateNewSubtree(tuple.nodeList, null , tuple.nodeStack, bestBound );
-				}
-			});
-		}
-
-		executorService.shutdown();
-		while(executorService.isTerminated() == false) {
-			checkQueue();
-		}
-		
+	}
+	
+	@Override
+	public HashMap<String, NodeTuple> getSchedule() {
 		return optimalSchedule;
 	}
 	
+	@Override
+	public void createSchedule(List<Node> nodeList, List<Edge> edgeList) {
+		this.nodeList = nodeList;
+		this.schedulerList = new ArrayList<ParallelSchedulerInterface>(traverseThreads);
+		
+		// Initially bestBound is equivalent to serial schedule
+		for (Node n : nodeList) {
+			this.bestBound += n.getWeight();
+			scheduleInfo.put(n.getName(), new NodeTuple());
+		}
+		
+
+		// Estimate heuristic costs
+		boolean hasDistanceChanged = true;
+		while (hasDistanceChanged) {
+			hasDistanceChanged = false;
+			for (Edge edge : edgeList) {
+				int newCritPathLength = edge.getEndNode().getCriticalPathLength() + edge.getStartNode().getWeight();
+				if (newCritPathLength > edge.getStartNode().getCriticalPathLength()) {
+					edge.getStartNode().setCriticalPathLength(newCritPathLength);
+					hasDistanceChanged = true;
+				}
+			}
+		}
+		
+		// Create schedulers and pass in appropriate partial schedule
+		subpathQueue = createSubpathTuples();
+		
+		ExecutorService executorService = Executors.newFixedThreadPool(traverseThreads);
+		List<Runnable> runnableList = new ArrayList<Runnable>(traverseThreads);
+		
+		for (int i = 0; i < traverseThreads; i++) {
+			runnableList.add(new Runnable() {
+				public void run() {
+					SubpathTuple tuple = getSubpathTuple();
+					if (tuple != null) {
+						ParallelSchedulerInterface scheduler = new PnV_DFS_BaB_Scheduler(new ValidNodeFinder(),tuple.processorAllocator);
+						schedulerList.add(scheduler);
+						
+						scheduler.initiateNewSubtree(nodeList, tuple.processorAllocator, tuple.nodeStack, bestBound, tuple.scheduleInfo,tuple.schedule);
+					} else {
+//						System.out.println("There are no tuples here, please resolve!");
+					}
+				}
+			});
+		}
+		
+		for (Runnable runnable : runnableList) {
+			executorService.execute(runnable);
+		}
+		
+		executorService.shutdown();
+		
+		while(executorService.isTerminated() == false || comparisonQueue.isEmpty() == false) {
+			checkQueue();
+		}
+	}
+	
 	private void checkQueue(){
-		while(comparisonQueue.isEmpty() == false){
+		while(comparisonQueue.isEmpty() == false) {
 			ComparisonTuple tuple = comparisonQueue.remove();
-			compareBounds(tuple.schedule,tuple.scheduleBound);
+			compareBounds(tuple.schedule, tuple.scheduleBound);
 		}
 	}
 
-	private void compareBounds(List<Node> schedule, int scheduleBound) {
-		if (scheduleBound < bestBound) {
-			bestBound = scheduleBound;
-			// Notify all schedules
-			notifyAllSchedulers(bestBound);
+	private synchronized void compareBounds(HashMap<String, NodeTuple> schedule, int scheduleBound) {
+		if (scheduleBound < this.bestBound) {
+			this.bestBound = scheduleBound;
+
+			notifyAllSchedulers(this.bestBound);
 
 			optimalSchedule = schedule;
-		} else if (scheduleBound == bestBound && optimalSchedule.size() == 0) {
+//			System.out.println("Found new bestBound of: " + this.bestBound);
+
+		} else if (scheduleBound == this.bestBound && optimalSchedule == null) {
 			optimalSchedule = schedule;
 		}
-
 	}
 
-	private void notifyAllSchedulers(int bestBound) {
-		for (SchedulerInterface scheduler : schedulerList) {
-			// scheduler.setBestBound(bestBound);
+	private synchronized void notifyAllSchedulers(int bestBound) {
+		for (ParallelSchedulerInterface scheduler : schedulerList) {
+			 scheduler.setBestBound(bestBound);
+
 		}
 	}
 
 	private SubpathTuple cloneSubpathTuple(SubpathTuple tuple) {
-		// NodeStack, NodeList, ProcAll
 
 		List<Queue<Node>> newNodeStack = new ArrayList<Queue<Node>>();
-		List<Node> newNodeList = new ArrayList<Node>();
-		ProcessorAllocator newProcessorAllocator = new ProcessorAllocator(
-				numProcessors);
-
-		// Clone the node list into newNodeList
-
-		for (Node node : tuple.nodeList) {
-			newNodeList.add(node.fullClone());
-		}
+		ProcessorAllocator newProcessorAllocator = new ProcessorAllocator(numProcessors);
+		List<Node> newSchedule = new ArrayList<Node>(nodeList.size());
 
 		// Clone the node stack into newNodeStack
 		for (Queue<Node> queue : tuple.nodeStack) {
 			Queue<Node> newQueue = new LinkedList<Node>();
-			for (Node node : queue) {
-				// Find equivalent node in our new node references to place in
-				// our new queue
-				for (Node node2 : newNodeList) {
-					if (node.equals(node2)) {
-						newQueue.add(node2);
-						break;
-					}
-				}
-			}
-			newNodeStack.add(newQueue);
-		}
-
-		// ProcessorAllocator is cloned
-		for (Node node : newNodeList) {
-			if (node.getHasRun() == true) {
-				newProcessorAllocator.addToProcessor(node, node.getProcessor());
+			
+			if (queue.isEmpty() == false) {
+				newQueue.add(queue.peek());
+				newNodeStack.add(newQueue);
 			}
 		}
 		
-		// Clone all edges - This will take forever, well team, we'll sink with our ship.
-		for (Node node : newNodeList) {
-			List<Edge> incomingEdges = node.getIncomingEdges();
-			List<Edge> outgoingEdges = node.getOutgoingEdges();
+		HashMap<String, NodeTuple> scheduleInfo = tuple.scheduleInfo;
+		HashMap<String, NodeTuple> newScheduleInfo = new HashMap<String, NodeTuple>();
+		newProcessorAllocator.addNodeInfo(newScheduleInfo);
+		
+		// Cloning ProcessorAllocator and ScheduleInfo from SubpathTuple
+		for (Node node : this.nodeList) {
+			NodeTuple nodeTuple = scheduleInfo.get(node.getName());
+			NodeTuple newNodeTuple = nodeTuple.clone();
+			newScheduleInfo.put(node.getName(), newNodeTuple);
 			
-			for(Edge edge: incomingEdges){
-				for(Node node2: newNodeList){
-					if(edge.getStartNode().equals(node2)){
-						edge.setStartNode(node2);
-						break;
-					}
-				}
-				edge.setEndNode(node);
+			if (newNodeTuple.getHasRun() == true) {
+				newProcessorAllocator.addToProcessor(node, newNodeTuple.getProcessor()); // Add scheduled node to processor object
+				newSchedule.add(node); //Add to ScheduledNodes
 			}
 			
-			for(Edge edge: outgoingEdges){
-				for(Node node2: newNodeList){
-					if(edge.getEndNode().equals(node2)){
-						edge.setEndNode(node2);
-						break;
-					}
-				}
-				edge.setStartNode(node);
-			}
 		}
 		
-		SubpathTuple clonedTuple = new SubpathTuple(newNodeList, newNodeStack, newProcessorAllocator);
+		SubpathTuple clonedTuple = new SubpathTuple(newNodeStack, newProcessorAllocator, newScheduleInfo, newSchedule);
 
 		return clonedTuple;
 
@@ -193,13 +211,16 @@ public class MasterScheduler implements SchedulerInterface {
 
 		// Create tuple to store in queue
 		ProcessorAllocatorInterface processorAllocatorInitial = new ProcessorAllocator(numProcessors);
-		SubpathTuple subpathTuple = new SubpathTuple(nodeList, nodeStack, processorAllocatorInitial);
-		subpathQueue.add(subpathTuple);
 
+		processorAllocatorInitial.addNodeInfo(this.scheduleInfo);
+		SubpathTuple subpathTuple = new SubpathTuple(nodeStack, processorAllocatorInitial, this.scheduleInfo, new ArrayList<Node>());
+		subpathQueue.add(subpathTuple);
+		
 		// Initially subpaths are equal to root nodes, only one processor is allocated, others will just be mirrors
-		int numSubpath = rootNodes.size();
+		int numSubpath = rootNodeQueue.size();
 		int nextNumSubpath = 0;
-		int heuristic = traverseThreads;	// TODO: improve heuristic (maybe)
+		int heuristic = (int) Math.min(Math.ceil(traverseThreads*1.5), nodeList.size() / 2);
+
 		int level = 0;
 		
 		while (numSubpath < heuristic) {
@@ -213,7 +234,9 @@ public class MasterScheduler implements SchedulerInterface {
 				nextNumSubpath = 0;
 				continue;
 			}
-			
+
+		
+
 			subpathQueue.remove();
 
 			Queue<Node> nodeQueue = nodeStack.get(level);
@@ -221,46 +244,99 @@ public class MasterScheduler implements SchedulerInterface {
 			// Loop through nodes on this level
 			while (nodeQueue.size() > 0) {
 				List<Node> schedule = new ArrayList<Node>();
-				Node currentNode = nodeQueue.remove();
-				while (processorAllocator.allocateProcessor(schedule,
-						currentNode, currentNode.getCheckedProcessors())) { // Loop to new processor on same dependent node
+
+				Node currentNode = nodeQueue.peek();
+				
+				int currentProcessor = this.scheduleInfo.get(currentNode.getName()).getProcessor();
+				processorAllocator.removeFromProcessor(currentNode, currentProcessor);
+				
+				// Loop to new processor on same dependent node
+				while (processorAllocator.allocateProcessor(schedule, currentNode)) {
 					SubpathTuple newSubpathTuple = cloneSubpathTuple(tuple);
-					List<Node> newNodeList = newSubpathTuple.nodeList;
+					nodeFinder.addNodeInfo(newSubpathTuple.scheduleInfo);
+					
 					List<Queue<Node>> newNodeStack = newSubpathTuple.nodeStack;
-					List<Node> satisfiedNodes = nodeFinder.findSatisfiedNodes(newNodeList);
-					nextNumSubpath += satisfiedNodes.size();
-					newNodeStack.add(new LinkedList<Node>());
+					
+					List<Node> satisfiedNodes = nodeFinder.findSatisfiedNodes(this.nodeList);
+					nextNumSubpath += satisfiedNodes.size() * Math.max(level+1, numProcessors);
+//					System.out.print("Next Level: ");
+//					for (int i = 0; i < satisfiedNodes.size(); i++) {
+//						System.out.print(satisfiedNodes.get(i).getName() + " ");
+//					}
+//					System.out.println("");
+					
+					Queue<Node> newNodeQueue = new LinkedList<Node>();
+					newNodeQueue.addAll(satisfiedNodes);
+					
+					newNodeStack.add(newNodeQueue);
 					subpathQueue.add(newSubpathTuple);
 				}
 				
-				currentNode.setHasRun(false);
-				currentNode.resetCheckedProcessors();
+				nodeQueue.remove();
+				
+				this.scheduleInfo.put(currentNode.getName(),new NodeTuple());
 			}
 		}
-		
+			
 		return subpathQueue;
 	}
-
+	
+	private synchronized SubpathTuple getSubpathTuple() {
+		while (subpathQueue.size() > 0) {
+			SubpathTuple mrTuple = subpathQueue.peek();
+			List<Queue<Node>> mrNodeStack = mrTuple.nodeStack;
+			Queue<Node> mrQueue = mrNodeStack.get(mrNodeStack.size() - 1);
+			
+			ProcessorAllocatorInterface mrAllocator = mrTuple.processorAllocator;
+			Node mrNode;
+			
+			while (mrQueue.size() > 0) {
+				mrNode = mrQueue.peek();
+				
+				int mrProcessor = mrTuple.scheduleInfo.get(mrNode.getName()).getProcessor();
+				if (mrProcessor != -1) {
+					mrAllocator.removeFromProcessor(mrNode, mrProcessor);
+				}
+				
+				if(mrAllocator.allocateProcessor(mrTuple.schedule, mrNode)) {
+					SubpathTuple mrClone = cloneSubpathTuple(mrTuple);
+					
+					return mrClone;
+				} else {
+					mrTuple.scheduleInfo.put(mrNode.getName(), new NodeTuple());
+					mrQueue.remove();
+				}
+			}
+			
+			subpathQueue.remove();
+		}
+		
+		return null;
+	}
+	
 	private class ComparisonTuple {
-		public List<Node> schedule;
+		public HashMap<String, NodeTuple> schedule;
 		public int scheduleBound;
 
-		public ComparisonTuple(List<Node> schedule, int scheduleBound) {
+		public ComparisonTuple(HashMap<String, NodeTuple> schedule, int scheduleBound) {
+
 			this.schedule = schedule;
 			this.scheduleBound = scheduleBound;
 		}
 	}
 
 	private class SubpathTuple {
-		public List<Node> nodeList;
+		public List<Node> schedule;
 		public List<Queue<Node>> nodeStack;
 		public ProcessorAllocatorInterface processorAllocator;
+		public HashMap<String, NodeTuple> scheduleInfo;
 
-		public SubpathTuple(List<Node> nodeList, List<Queue<Node>> nodeStack,
-				ProcessorAllocatorInterface processorAllocator) {
-			this.nodeList = nodeList;
+		public SubpathTuple(List<Queue<Node>> nodeStack, ProcessorAllocatorInterface processorAllocator, 
+				HashMap<String, NodeTuple> scheduleInfo, List<Node> schedule) {
+			this.schedule = schedule;
 			this.nodeStack = nodeStack;
 			this.processorAllocator = processorAllocator;
+			this.scheduleInfo = scheduleInfo;
 		}
 
 	}
