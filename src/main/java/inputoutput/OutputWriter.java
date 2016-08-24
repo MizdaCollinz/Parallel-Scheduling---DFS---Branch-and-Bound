@@ -4,6 +4,7 @@ import models.Edge;
 import models.Node;
 import models.NodeTuple;
 
+
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
@@ -19,6 +20,7 @@ import java.util.List;
 public class OutputWriter {
 
     public void writeFile(List<Node> nodes, HashMap<String, NodeTuple> nodeInfo, List<Edge> scheduleEdges, String outputFileName) {
+
         try {
             //Get working directory
             String dir = System.getProperty("user.dir");
@@ -36,6 +38,7 @@ public class OutputWriter {
                 	System.out.println("nodeInfo.get(node.getName()) is null dude and node is: " + node.getName());
                 }
                 writer.println("\t\t" + node.getName() + "\t\t [Weight=" + node.getWeight() + ", Start=" + nodeInfo.get(node.getName()).getStartTime() + ", Processor=" + nodeInfo.get(node.getName()).getProcessor() + "];");
+
             }
 
             for (Edge edge : scheduleEdges) {

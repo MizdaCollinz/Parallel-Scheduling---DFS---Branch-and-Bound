@@ -16,6 +16,7 @@ public class Node implements Comparable<Node>, Cloneable {
     private List<Edge> outgoingEdges;
     private int criticalPathLength = 0;
 
+
     public Node(String name, int weight) {
 
         this.name = name;
@@ -74,9 +75,11 @@ public class Node implements Comparable<Node>, Cloneable {
 	}
    
 
+
     public int compareTo(Node node) {
         return node.getWeight() - this.weight;
     }
+
 
 //    public Node clone() {
 //        Node clone = new Node(this.name, this.weight);
@@ -85,4 +88,5 @@ public class Node implements Comparable<Node>, Cloneable {
 //        clone.setHasRun(this.hasRun);
 //        return clone;
 //    }
+
 }

@@ -41,7 +41,9 @@ public class ValidNodeFinder implements ValidNodeFinderInterface {
     // If yes, add it to a list of satisfied nodes and return it
     public List<Node> findSatisfiedChildren(Node node) {
         // Children will not be satisfied unless input node itself is satisfied
+
         if (nodeInfo.get(node.getName()).getHasRun() == false) {
+
             return new ArrayList<Node>();
         }
 
@@ -65,6 +67,7 @@ public class ValidNodeFinder implements ValidNodeFinderInterface {
         for (Edge edge : edges) {
             Node startNode = edge.getStartNode();
             if (nodeInfo.get(startNode.getName()).getHasRun() == false) {
+
                 return false;
             }
         }
@@ -78,6 +81,7 @@ public class ValidNodeFinder implements ValidNodeFinderInterface {
         List<Node> satisfiedNodes = new ArrayList<Node>();
         for (Node node : nodes) {
             if (isAvailable(node) && !(nodeInfo.get(node.getName()).getHasRun())) {
+
                 satisfiedNodes.add(node);
             }
         }

@@ -2,14 +2,20 @@ package scheduler;
 
 import models.Edge;
 import models.Node;
+<<<<<<< HEAD
 import models.NodeTuple;
 
 import org.junit.After;
+=======
+>>>>>>> origin/master
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
+<<<<<<< HEAD
 import java.util.HashMap;
+=======
+>>>>>>> origin/master
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -22,7 +28,10 @@ public class ProcessorAllocatorTest {
     List<Node> schedule;
     ProcessorAllocator processorAllocator;
     List<Integer> unavailableProcessors;
+<<<<<<< HEAD
     HashMap<String, NodeTuple> nodeInfo = new HashMap<String, NodeTuple>();
+=======
+>>>>>>> origin/master
 
     @Before
     // A -> B; A -> C; B,C -> D
@@ -41,29 +50,46 @@ public class ProcessorAllocatorTest {
         d.addIncomingEdge(new Edge(b, d, 1));
         d.addIncomingEdge(new Edge(c, d, 1));
 
+<<<<<<< HEAD
         nodeInfo.put(a.getName(), new NodeTuple(0, 1, new ArrayList<Integer>(), true));
 
         nodeInfo.put(b.getName(), new NodeTuple(1, 1, new ArrayList<Integer>(), true));
         
         nodeInfo.put(c.getName(), new NodeTuple());
         nodeInfo.put(d.getName(), new NodeTuple());
+=======
+        a.setProcessor(1);
+        a.setStartTime(0);
+        a.setHasRun(true);
+
+        b.setProcessor(1);
+        b.setStartTime(1);
+        b.setHasRun(true);
+>>>>>>> origin/master
 
         // Current schedule so far only has node 'a' and 'b' processed and assigned
         schedule = new ArrayList<Node>();
         schedule.add(a);
         schedule.add(b);
 
+<<<<<<< HEAD
         processorAllocator = new ProcessorAllocator(2);
         processorAllocator.addNodeInfo(nodeInfo);
         
         processorAllocator.addToProcessor(a, 1);
         processorAllocator.addToProcessor(b, 1);
+=======
+        unavailableProcessors = new ArrayList<Integer>();
+
+        processorAllocator = new ProcessorAllocator(2);
+>>>>>>> origin/master
     }
 
     @Test
     // Tests when processor 2 is unavailable, leaving only 1 processor available
     // Tests that the correct Processor is generated
     public void allocateProcessorTest1() {
+<<<<<<< HEAD
     	nodeInfo.get(c.getName()).addCheckedProcessor(2);
 
         int expectedProcessor = 1;
@@ -74,12 +100,24 @@ public class ProcessorAllocatorTest {
         assertEquals(expectedProcessor, actualProcessor);
         
         nodeInfo.get(c.getName()).resetCheckedProcessors();
+=======
+        List<Integer> unavailableProcessors = new ArrayList<Integer>();
+        unavailableProcessors.add(2);
+
+        int expectedProcessor = 1;
+
+        processorAllocator.allocateProcessor(schedule, c, unavailableProcessors);
+        int actualProcessor = c.getProcessor();
+
+        assertEquals(expectedProcessor, actualProcessor);
+>>>>>>> origin/master
     }
 
     // Tests when processor 2 is unavailable, leaving only 1 processor available
     // Tests that the correct Start Time is generated
     @Test
     public void allocateProcessorTest2() {
+<<<<<<< HEAD
     	nodeInfo.get(c.getName()).addCheckedProcessor(2);
 
         int expectedStartTime = 3;
@@ -90,12 +128,23 @@ public class ProcessorAllocatorTest {
         assertEquals(expectedStartTime, actualStartTime);
         
         nodeInfo.get(c.getName()).resetCheckedProcessors();
+=======
+        unavailableProcessors.add(2);
+
+        int expectedStartTime = 3;
+
+        processorAllocator.allocateProcessor(schedule, c, unavailableProcessors);
+        int actualStartTime = c.getStartTime();
+
+        assertEquals(expectedStartTime, actualStartTime);
+>>>>>>> origin/master
     }
 
     // Tests when it has the option to use either processor 1 or 2, and chooses the best one
     // Tests that the correct Processor is generated
     @Test
     public void allocateProcessorTest3() {
+<<<<<<< HEAD
         nodeInfo.put(c.getName(), new NodeTuple(2, 2, new ArrayList<Integer>(), true));
         schedule.add(c);
         int expectedProcessor = 2;
@@ -106,6 +155,18 @@ public class ProcessorAllocatorTest {
         assertEquals(expectedProcessor, actualProcessor);
         
         nodeInfo.get(d.getName()).resetCheckedProcessors();
+=======
+        c.setProcessor(2);
+        c.setStartTime(2);
+        c.setHasRun(true);
+        schedule.add(c);
+        int expectedProcessor = 2;
+
+        processorAllocator.allocateProcessor(schedule, d, unavailableProcessors);
+        int actualProcessor = d.getProcessor();
+
+        assertEquals(expectedProcessor, actualProcessor);
+>>>>>>> origin/master
     }
 
     // Tests when it has the option to use either processor 1 or 2, and chooses the best one
@@ -113,12 +174,23 @@ public class ProcessorAllocatorTest {
     @Test
     public void allocateProcessorTest4() {
         // Assigns 'c' into the schedule
+<<<<<<< HEAD
         nodeInfo.put(c.getName(), new NodeTuple(2, 2, new ArrayList<Integer>(), true));
         schedule.add(c);
         int expectedStartTime = 5;
 
         processorAllocator.allocateProcessor(schedule, d);
         int actualStartTime = nodeInfo.get(d.getName()).getStartTime();
+=======
+        c.setProcessor(2);
+        c.setStartTime(2);
+        c.setHasRun(true);
+        schedule.add(c);
+        int expectedStartTime = 5;
+
+        processorAllocator.allocateProcessor(schedule, d, unavailableProcessors);
+        int actualStartTime = d.getStartTime();
+>>>>>>> origin/master
 
         assertEquals(expectedStartTime, actualStartTime);
     }
@@ -147,7 +219,13 @@ public class ProcessorAllocatorTest {
     @Test
     public void findEarliestStartTimeTest3() {
         // Assigns 'c' into the schedule
+<<<<<<< HEAD
         nodeInfo.put(c.getName(), new NodeTuple(2, 2, new ArrayList<Integer>(), true));
+=======
+        c.setProcessor(2);
+        c.setStartTime(2);
+        c.setHasRun(true);
+>>>>>>> origin/master
         schedule.add(c);
         int expected = 6;
 

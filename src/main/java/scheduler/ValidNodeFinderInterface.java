@@ -1,9 +1,11 @@
 package scheduler;
 
 import models.Node;
+
 import models.NodeTuple;
 
 import java.util.HashMap;
+
 import java.util.List;
 
 /**
@@ -19,4 +21,5 @@ public interface ValidNodeFinderInterface {
 	public List<Node> findSatisfiedChildren(Node node);
 	
 	public List<Node> findSatisfiedNodes(List<Node> nodes);
+
 }

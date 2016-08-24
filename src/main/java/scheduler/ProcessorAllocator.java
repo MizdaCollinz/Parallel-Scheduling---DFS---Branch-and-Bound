@@ -7,6 +7,7 @@ import models.Processor;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+
 import java.util.List;
 
 /**
@@ -23,6 +24,7 @@ public class ProcessorAllocator implements ProcessorAllocatorInterface {
     
     HashMap<String, NodeTuple> nodeInfo;
 
+
     public ProcessorAllocator(int numProcessors) {
         this.numProcessors = numProcessors;
         this.processors = new ArrayList<Processor>(numProcessors);
@@ -30,6 +32,7 @@ public class ProcessorAllocator implements ProcessorAllocatorInterface {
         	processors.add(new Processor());
         }
     }
+
     
 	public void addNodeInfo(HashMap<String, NodeTuple> nodeInfo) {
 		this.nodeInfo = nodeInfo;
@@ -38,6 +41,7 @@ public class ProcessorAllocator implements ProcessorAllocatorInterface {
     public boolean allocateProcessor(List<Node> schedule, Node node) {
         // There are no available processors for which the node can be assigned to.
         if (nodeInfo.get(node.getName()).getCheckedProcessors().size() >= numProcessors) {
+
             return false;
         }
 
@@ -47,7 +51,9 @@ public class ProcessorAllocator implements ProcessorAllocatorInterface {
 
         // Go through every processor and find the best time available for each one
         for (int i = 1; i <= numProcessors; i++) {
+
             if (!nodeInfo.get(node.getName()).getCheckedProcessors().contains(i)) {
+
                 // If the specified processor is available, then find the best time for the specified processor
                 tempEarliestStartTime = findEarliestStartTime(schedule, node, i);
 
@@ -58,6 +64,7 @@ public class ProcessorAllocator implements ProcessorAllocatorInterface {
                 } else if (tempEarliestStartTime == earliestStartTime && processors.get(bestProcessor - 1).isEmpty() && processors.get(i - 1).isEmpty()) {
 					// If equal each placement mirrors the other, pre-emptively regard as checked
                 	nodeInfo.get(node.getName()).addCheckedProcessor(i);
+
 
 				}
             }
@@ -75,6 +82,7 @@ public class ProcessorAllocator implements ProcessorAllocatorInterface {
     }
 
     public int findEarliestStartTime(List<Node> schedule, Node node, int processor) {
+
         List<Edge> dependencies = node.getIncomingEdges();
         int earliestValidStart = 0;
         int earliestValidEnd = node.getWeight();

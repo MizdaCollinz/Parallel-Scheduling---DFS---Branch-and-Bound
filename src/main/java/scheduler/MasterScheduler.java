@@ -10,6 +10,7 @@ import java.util.concurrent.Executors;
 
 import models.Edge;
 import models.Node;
+
 import models.NodeTuple;
 
 public class MasterScheduler implements MasterSchedulerInterface {
@@ -18,6 +19,7 @@ public class MasterScheduler implements MasterSchedulerInterface {
 	private List<Node> nodeList;
 	private HashMap<String, NodeTuple> optimalSchedule;
 	private HashMap<String, NodeTuple> scheduleInfo = new HashMap<String, NodeTuple>();
+
 	private int bestBound = 0;
 	private static int traverseThreads;
 	private static int numProcessors;
@@ -30,12 +32,14 @@ public class MasterScheduler implements MasterSchedulerInterface {
 	private MasterScheduler() {}
 
 	public static MasterSchedulerInterface getInstance() {
+
 		if (masterScheduler == null) {
 			masterScheduler = new MasterScheduler();
 		}
 
 		return masterScheduler;
 	}
+
 
 	public static MasterSchedulerInterface getInstance(int numCores, int numProcessors) {
 		MasterScheduler.traverseThreads = numCores - 1;
@@ -146,10 +150,12 @@ public class MasterScheduler implements MasterSchedulerInterface {
 	private synchronized void notifyAllSchedulers(int bestBound) {
 		for (ParallelSchedulerInterface scheduler : schedulerList) {
 			 scheduler.setBestBound(bestBound);
+
 		}
 	}
 
 	private SubpathTuple cloneSubpathTuple(SubpathTuple tuple) {
+
 		List<Queue<Node>> newNodeStack = new ArrayList<Queue<Node>>();
 		ProcessorAllocator newProcessorAllocator = new ProcessorAllocator(numProcessors);
 		List<Node> newSchedule = new ArrayList<Node>(nodeList.size());
@@ -184,6 +190,7 @@ public class MasterScheduler implements MasterSchedulerInterface {
 		SubpathTuple clonedTuple = new SubpathTuple(newNodeStack, newProcessorAllocator, newScheduleInfo, newSchedule);
 
 		return clonedTuple;
+
 	}
 
 	private Queue<SubpathTuple> createSubpathTuples() {
@@ -194,7 +201,7 @@ public class MasterScheduler implements MasterSchedulerInterface {
 		// Store all root nodes into a queue
 		Queue<Node> rootNodeQueue = new LinkedList<Node>();
 		rootNodeQueue.addAll(rootNodes);
-		
+
 		// Queue of subpath tuples used for ParallelScheduler
 		Queue<SubpathTuple> subpathQueue = new LinkedList<SubpathTuple>();
 
@@ -204,6 +211,7 @@ public class MasterScheduler implements MasterSchedulerInterface {
 
 		// Create tuple to store in queue
 		ProcessorAllocatorInterface processorAllocatorInitial = new ProcessorAllocator(numProcessors);
+
 		processorAllocatorInitial.addNodeInfo(this.scheduleInfo);
 		SubpathTuple subpathTuple = new SubpathTuple(nodeStack, processorAllocatorInitial, this.scheduleInfo, new ArrayList<Node>());
 		subpathQueue.add(subpathTuple);
@@ -212,6 +220,7 @@ public class MasterScheduler implements MasterSchedulerInterface {
 		int numSubpath = rootNodeQueue.size();
 		int nextNumSubpath = 0;
 		int heuristic = (int) Math.min(Math.ceil(traverseThreads*1.5), nodeList.size() / 2);
+
 		int level = 0;
 		
 		while (numSubpath < heuristic) {
@@ -225,7 +234,9 @@ public class MasterScheduler implements MasterSchedulerInterface {
 				nextNumSubpath = 0;
 				continue;
 			}
+
 		
+
 			subpathQueue.remove();
 
 			Queue<Node> nodeQueue = nodeStack.get(level);
@@ -233,6 +244,7 @@ public class MasterScheduler implements MasterSchedulerInterface {
 			// Loop through nodes on this level
 			while (nodeQueue.size() > 0) {
 				List<Node> schedule = new ArrayList<Node>();
+
 				Node currentNode = nodeQueue.peek();
 				
 				int currentProcessor = this.scheduleInfo.get(currentNode.getName()).getProcessor();
@@ -307,6 +319,7 @@ public class MasterScheduler implements MasterSchedulerInterface {
 		public int scheduleBound;
 
 		public ComparisonTuple(HashMap<String, NodeTuple> schedule, int scheduleBound) {
+
 			this.schedule = schedule;
 			this.scheduleBound = scheduleBound;
 		}
@@ -325,5 +338,6 @@ public class MasterScheduler implements MasterSchedulerInterface {
 			this.processorAllocator = processorAllocator;
 			this.scheduleInfo = scheduleInfo;
 		}
+
 	}
 }

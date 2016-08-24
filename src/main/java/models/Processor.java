@@ -9,11 +9,13 @@ public class Processor {
 	int endTime = 0;
 	List<Node> allocatedNodes = new ArrayList<Node>();
 	HashMap<String, Integer> allocatedNodeInfo = new HashMap<String, Integer>();
+
 	
 	public int getEndTime() {
 		return endTime;
 	}
 	
+
 	public HashMap<String, Integer> getAllocatedNodeInfo(){
 		return allocatedNodeInfo;
 	}
@@ -22,11 +24,13 @@ public class Processor {
 //        int foundStartTime = 0;
 //        int foundEndTime = 0;
 //
+
         if (earliestValidStart > endTime) { 
         	return earliestValidStart; 
         } else { 
         	return endTime; 
         }
+
 //        
 //        boolean startChanged = true;
 //        while (startChanged) {
@@ -34,6 +38,7 @@ public class Processor {
 //            // Find earliest start based on allocated nodes
 //            for (Node snode : allocatedNodes) {
 //                foundStartTime = allocatedNodeInfo.get(snode.getName());
+
 //                foundEndTime = foundStartTime + snode.getWeight();
 //                // Current earliest valid start time overlaps another task
 //                if (earliestValidStart >= foundStartTime && earliestValidStart < foundEndTime) {
@@ -58,10 +63,12 @@ public class Processor {
 //        return earliestValidStart;
 	}
 	
+
 	public void addNode(Node node, NodeTuple tuple) {
 		allocatedNodeInfo.put(node.getName(), tuple.getStartTime());
 		allocatedNodes.add(node);
 		int nodeEndTime = tuple.getStartTime() + node.getWeight();
+
 		if (nodeEndTime > endTime) {
 			endTime = nodeEndTime;
 		}
@@ -87,6 +94,7 @@ public class Processor {
 				endTime = nodeEndTime;
 			}
 		}
+
 	}
 	
 	public boolean isEmpty() {
