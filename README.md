@@ -31,6 +31,8 @@ In an IDE with Maven installed, run the Maven clean and install goals. This will
 This jar is ready to run.
 
 ## Where to Find Information
+https://github.com/Helen-Zhao/parallel-task-scheduler is the base fork for this group project, the Wiki is stored there
+
  Wiki (See side bar):
  - Meeting Minutes
  - Decisions/Issues (In Meeting Minutes)
